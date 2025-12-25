@@ -98,3 +98,54 @@ def log_event(entity_type, entity_id, event_type):
 
     conn.commit()
     conn.close()
+
+def get_shipments_pending():
+    conn = get_connection()
+    cursor = conn.cursor()
+    rows = cursor.execute("""
+        SELECT * FROM shipments
+        WHERE delivered = 0
+    """).fetchall()
+    conn.close()
+    return rows
+
+
+def update_shipment_status(
+    shipment_id,
+    status,
+    location,
+    eta,
+    delivered=False
+):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE shipments
+        SET last_status = ?,
+            last_location = ?,
+            eta = ?,
+            delivered = ?,
+            last_checked = ?
+        WHERE id = ?
+    """, (
+        status,
+        location,
+        eta,
+        1 if delivered else 0,
+        __import__("datetime").datetime.utcnow().isoformat(),
+        shipment_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+def get_vessel_by_id(vessel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    row = cursor.execute(
+        "SELECT * FROM vessels WHERE id = ?",
+        (vessel_id,)
+    ).fetchone()
+    conn.close()
+    return row
